@@ -444,8 +444,8 @@ async function dbGet(path){
   return fromFS(await r.json());
 }
 async function dbSet(path,obj){
-  const fields=Object.keys(obj).map(k=>"updateMask.fieldPaths="+k).join("&");
-  await fetch(FB_DB_URL+"/"+path+"?"+fields,{
+  // PATCH without updateMask creates the document if it doesn't exist
+  await fetch(FB_DB_URL+"/"+path,{
     method:"PATCH",
     headers:{"Authorization":"Bearer "+_idToken,"Content-Type":"application/json"},
     body:JSON.stringify(toFS(obj))
