@@ -71,6 +71,8 @@ main{max-width:1080px;margin:0 auto;padding:1.5rem}
 .del-btn{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:#fff;color:#C0392B;border:1.5px solid #C0392B;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;font-weight:300;opacity:0;transition:all 0.15s;cursor:pointer;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,0.15)}
 .del-btn:hover{background:#C0392B;color:#fff}
 .cloth-card:hover .wear-btn,.cloth-card:hover .del-btn{opacity:1}
+.retry-btn{position:absolute;top:6px;left:6px;background:#FFF8EC;color:#C88010;border:1.5px solid #F0C878;border-radius:8px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;z-index:2;display:flex;align-items:center;gap:3px}
+.retry-btn:hover{background:#F0C878}
 
 .empty-state{text-align:center;padding:3.5rem 1rem;color:var(--text2);grid-column:1/-1}
 .empty-state i{font-size:44px;color:var(--text3);display:block;margin-bottom:1rem}
@@ -512,8 +514,9 @@ async function doAuth(){
       return;
     }
     _idToken=d.idToken;_uid=d.localId;
-    _currentUser={uid:d.localId,email:d.email};
+    _currentUser={uid:d.localId,email:d.email,refreshToken:d.refreshToken};
     await onSignedIn();
+    startTokenRefresh();
   }catch(e){
     console.error('doAuth error:',e);
     errEl.textContent='Error: '+e.message;
@@ -528,6 +531,7 @@ function forgotPassword(){
 }
 async function doSignOut(){
   _idToken=null;_uid=null;_currentUser=null;items=[];outfits=[];
+  localStorage.removeItem('fs_session');
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app-screen').style.display='none';
 }
@@ -536,9 +540,76 @@ async function onSignedIn(){
   document.getElementById('app-screen').style.display='block';
   const mob=(_currentUser.email||'').replace('@fitsync.app','');
   document.getElementById('nav-phone').textContent='+'+mob.slice(0,2)+' '+mob.slice(2);
+  // Persist session for auto-login
+  localStorage.setItem('fs_session',JSON.stringify({
+    idToken:_idToken,
+    refreshToken:_currentUser.refreshToken||'',
+    uid:_uid,
+    email:_currentUser.email,
+    expiry:Date.now()+55*60*1000 // 55 min (token lasts 1hr)
+  }));
   showToast('Welcome back!');
   await load();
   renderWardrobe();
+}
+
+async function refreshToken(refreshToken){
+  const r=await fetch('https://securetoken.googleapis.com/v1/token?key='+FB_API_KEY,{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'grant_type=refresh_token&refresh_token='+refreshToken
+  });
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message);
+  return{idToken:d.id_token,refreshToken:d.refresh_token,uid:d.user_id};
+}
+
+async function tryAutoLogin(){
+  try{
+    const raw=localStorage.getItem('fs_session');
+    if(!raw)return false;
+    const session=JSON.parse(raw);
+    if(!session.uid||!session.refreshToken)return false;
+    // Always refresh the token to get a fresh one
+    const refreshed=await refreshToken(session.refreshToken);
+    _idToken=refreshed.idToken;
+    _uid=refreshed.uid;
+    _currentUser={uid:refreshed.uid,email:session.email,refreshToken:refreshed.refreshToken};
+    // Update stored session with new tokens
+    localStorage.setItem('fs_session',JSON.stringify({
+      idToken:_idToken,
+      refreshToken:refreshed.refreshToken,
+      uid:_uid,
+      email:session.email,
+      expiry:Date.now()+55*60*1000
+    }));
+    await onSignedIn();
+    return true;
+  }catch(e){
+    console.warn('Auto-login failed:',e.message);
+    localStorage.removeItem('fs_session');
+    return false;
+  }
+}
+
+// Set up token auto-refresh every 50 minutes
+function startTokenRefresh(){
+  setInterval(async()=>{
+    try{
+      const raw=localStorage.getItem('fs_session');
+      if(!raw)return;
+      const session=JSON.parse(raw);
+      if(!session.refreshToken)return;
+      const refreshed=await refreshToken(session.refreshToken);
+      _idToken=refreshed.idToken;
+      localStorage.setItem('fs_session',JSON.stringify({
+        ...session,
+        idToken:_idToken,
+        refreshToken:refreshed.refreshToken,
+        expiry:Date.now()+55*60*1000
+      }));
+    }catch(e){console.warn('Token refresh failed:',e);}
+  },50*60*1000);
 }
 
 
@@ -608,6 +679,15 @@ let outfitOccFilter='All';
 let currentImg=null;
 
 // load/save handled by Firebase REST API above
+
+// ── Auto-login on page load ────────────────────────────────
+(async()=>{
+  const loggedIn=await tryAutoLogin();
+  if(!loggedIn){
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app-screen').style.display='none';
+  }
+})();
 
 function showToast(msg){
   const t=document.getElementById('toast');
@@ -682,6 +762,25 @@ function hideProcessing(){
   document.getElementById('processing-overlay').style.display='none';
 }
 
+// ── Cloudinary image upload ───────────────────────────────
+const CL_CLOUD="doybm5ytd";
+const CL_PRESET="ejy1xbbd";
+const CL_URL="https://api.cloudinary.com/v1_1/"+CL_CLOUD+"/image/upload";
+
+async function uploadToCloudinary(dataUrl){
+  // Convert base64 dataUrl to blob
+  const res=await fetch(dataUrl);
+  const blob=await res.blob();
+  const fd=new FormData();
+  fd.append('file',blob);
+  fd.append('upload_preset',CL_PRESET);
+  fd.append('folder','fitsync');
+  const r=await fetch(CL_URL,{method:'POST',body:fd});
+  if(!r.ok)throw new Error('Cloudinary upload failed: '+r.status);
+  const d=await r.json();
+  return d.secure_url; // returns https:// URL
+}
+
 function readFile(f){
   const r=new FileReader();
   r.onload=ev=>{
@@ -704,9 +803,35 @@ function readFile(f){
       ctx.fillStyle='#fff';
       ctx.fillRect(0,0,W,H);
       ctx.drawImage(tmpImg,0,0,W,H);
-      currentImg=original;
-      showProcessing('Detecting colour…');
-      autoDetectColor(ctx,W,H);
+      // Compress image to max 600px, JPEG quality 0.6 (~20-40KB per image)
+      const CMAX=600;
+      const cScale=Math.min(1,CMAX/Math.max(W,H));
+      const cW=Math.round(W*cScale), cH=Math.round(H*cScale);
+      const cCanvas=document.createElement('canvas');
+      cCanvas.width=cW; cCanvas.height=cH;
+      const cCtx=cCanvas.getContext('2d');
+      cCtx.fillStyle='#fff';
+      cCtx.fillRect(0,0,cW,cH);
+      cCtx.drawImage(canvas,0,0,cW,cH);
+      const compressedDataUrl=cCanvas.toDataURL('image/jpeg',0.6);
+      // Show preview immediately using local data URL
+      previewEl.src=compressedDataUrl;
+      currentImg=compressedDataUrl; // fallback until upload completes
+      showProcessing('Uploading image…');
+      // Upload to Cloudinary in background, then run colour detection
+      uploadToCloudinary(compressedDataUrl).then(url=>{
+        currentImg=url; // replace base64 with CDN URL
+        previewEl.src=url;
+        showProcessing('Detecting colour…');
+        autoDetectColor(ctx,W,H);
+      }).catch(err=>{
+        console.warn('Cloudinary upload failed',err);
+        currentImg=compressedDataUrl;
+        hideProcessing();
+        showToast('⚠️ Image upload failed — item saved locally only');
+        // Still run colour detection on local image
+        autoDetectColor(ctx,W,H);
+      });
     };
     tmpImg.src=original;
   };
@@ -1220,10 +1345,12 @@ function renderWardrobe(){
     const occs=(item.occasions||[]).slice(0,2).map(o=>`<span class="card-badge occasion-badge">${o}</span>`).join('');
     const patternBadge=item.pattern&&item.pattern!=='Solid'?`<span class="card-badge" style="background:var(--surface3);color:var(--text2)">${item.pattern}</span>`:'';
     const accentBadge=item.accentColor?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text3)">${(()=>{const ac=COLORS.find(c=>c.name===item.accentColor);return ac?`<span style="width:9px;height:9px;border-radius:50%;background:${ac.hex};border:1px solid rgba(0,0,0,0.12);display:inline-block"></span>`:''})()}${item.accentColor}</span>`:'';
+    const isLocalImg=item.img&&item.img.startsWith('data:');
     return`<div class="cloth-card" id="card-${item.id}">
       <div class="img-wrap">
         ${item.img?`<img src="${item.img}" alt="${item.name}" />`:`<i class="fas ${CAT_ICONS[item.category]||'fa-shirt'} placeholder-icon"></i>`}
       </div>
+      ${isLocalImg?`<button class="retry-btn" onclick="retryUpload('${item.id}',event)" title="Upload failed — tap to retry"><i class="fas fa-cloud-arrow-up" style="font-size:10px"></i> Sync</button>`:''}
       <button class="wear-btn" onclick="openWearModal('${item.id}',event)">+ Wear</button>
       <button class="del-btn" onclick="openDeleteModal('${item.id}',event)" title="Remove item">&#215;</button>
       <div class="card-body">
@@ -1237,6 +1364,22 @@ function renderWardrobe(){
       </div>
     </div>`;
   }).join('');
+}
+
+async function retryUpload(id,e){
+  e.stopPropagation();
+  const item=items.find(i=>i.id===id);
+  if(!item||!item.img||!item.img.startsWith('data:'))return;
+  showToast('Uploading image…');
+  try{
+    const url=await uploadToCloudinary(item.img);
+    item.img=url;
+    save();
+    renderWardrobe();
+    showToast('Image synced to cloud ✓');
+  }catch(err){
+    showToast('Upload failed. Check your connection and try again.');
+  }
 }
 
 function openWearModal(id,e){
@@ -1261,7 +1404,8 @@ function openDeleteModal(id,e){
   pendingDeleteId=id;
   const it=items.find(i=>i.id===id);if(!it)return;
   document.getElementById('delete-modal-title').textContent='Remove "'+it.name+'"?';
-  document.getElementById('delete-modal-desc').textContent='This will permanently remove it from your wardrobe and any saved outfits.';
+  const imgNote=it.img&&!it.img.startsWith('data:')?'  The photo will remain in cloud storage.':"";
+  document.getElementById('delete-modal-desc').textContent='This will permanently remove it from your wardrobe and any saved outfits.'+imgNote;
   document.getElementById('delete-modal-overlay').classList.add('open');
 }
 
