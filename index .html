@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FITSYNC — My Wardrobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<style>
+
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F5F0;--surface:#FFFFFF;--surface2:#F0EDE6;--surface3:#E8E3D9;
+  --text:#1A1814;--text2:#6B6560;--text3:#A09B95;
+  --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);
+  --accent:#2D2926;--accent2:#C8A882;--accent3:#E8D9C4;
+  --green:#3B7A57;--green-bg:#EAF4EE;
+  --shadow:0 2px 12px rgba(0,0,0,0.07);
+  --r:10px;--rlg:16px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+button{font-family:'DM Sans',sans-serif;cursor:pointer}
+
+nav{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:58px;gap:1rem}
+.logo{font-family:'DM Serif Display',serif;font-size:21px;letter-spacing:3px;color:var(--text);white-space:nowrap}
+.logo span{color:var(--accent2)}
+.nav-tabs{display:flex;gap:3px;flex-shrink:0}
+.nav-tab{padding:7px 15px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all 0.18s}
+.nav-tab.active{background:var(--accent);color:#fff}
+.nav-tab:hover:not(.active){background:var(--surface2);color:var(--text)}
+.btn-primary{padding:8px 18px;border-radius:20px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity 0.2s;white-space:nowrap}
+.btn-primary:hover{opacity:0.83}
+
+main{max-width:1080px;margin:0 auto;padding:1.5rem}
+.view{display:none}.view.active{display:block}
+.page-title{font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:1.25rem}
+.section-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.stat-num{font-family:'DM Serif Display',serif;font-size:24px;color:var(--text)}
+
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem}
+.search-bar{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:7px 14px;min-width:200px;flex:1}
+.search-bar input{border:none;outline:none;background:transparent;font-size:13px;color:var(--text);width:100%;font-family:'DM Sans',sans-serif}
+.search-bar i{color:var(--text3);font-size:13px;flex-shrink:0}
+
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.chip{padding:5px 13px;border-radius:18px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all 0.15s;white-space:nowrap}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip:hover:not(.active){border-color:var(--accent2);color:var(--text)}
+.chip.color-chip{display:flex;align-items:center;gap:5px}
+.color-swatch{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,0.12);flex-shrink:0}
+
+.clothes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+.cloth-card{background:var(--surface);border-radius:var(--rlg);overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:transform 0.18s,box-shadow 0.18s;position:relative}
+.cloth-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.cloth-card .img-wrap{aspect-ratio:3/4;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.cloth-card .img-wrap img{width:100%;height:100%;object-fit:cover}
+.placeholder-icon{font-size:42px;color:var(--text3)}
+.card-body{padding:9px 11px}
+.card-name{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.card-badge{padding:2px 7px;border-radius:8px;font-size:10px;font-weight:500}
+.wear-badge{background:var(--surface2);color:var(--text2)}
+.occasion-badge{background:var(--accent3);color:var(--accent)}
+.wear-btn{position:absolute;bottom:48px;right:7px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:500;opacity:0;transition:opacity 0.15s;cursor:pointer;z-index:2}
+.del-btn{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:#fff;color:#C0392B;border:1.5px solid #C0392B;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;font-weight:300;opacity:0;transition:all 0.15s;cursor:pointer;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,0.15)}
+.del-btn:hover{background:#C0392B;color:#fff}
+.cloth-card:hover .wear-btn,.cloth-card:hover .del-btn{opacity:1}
+
+.empty-state{text-align:center;padding:3.5rem 1rem;color:var(--text2);grid-column:1/-1}
+.empty-state i{font-size:44px;color:var(--text3);display:block;margin-bottom:1rem}
+.empty-state h3{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:6px}
+.empty-state p{font-size:13px;color:var(--text3)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.38);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:20px;width:100%;max-width:460px;padding:1.75rem;animation:mIn 0.2s ease;margin:auto}
+@keyframes mIn{from{transform:scale(0.96);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.modal-title{font-family:'DM Serif Display',serif;font-size:21px}
+.modal-close{background:var(--surface2);border:none;cursor:pointer;color:var(--text);font-size:18px;font-weight:400;padding:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.15s;line-height:1}
+.modal-close:hover{background:var(--surface3)}
+.drop-zone{border:2px dashed var(--border2);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:all 0.18s;margin-bottom:1.25rem;background:var(--surface2)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent2);background:var(--accent3)}
+.drop-zone i{font-size:28px;color:var(--accent2);margin-bottom:8px;display:block}
+.drop-zone p{font-size:13px;color:var(--text2)}
+.drop-zone span{font-size:11px;color:var(--text3)}
+#file-input{display:none}
+.preview-img{width:100%;height:220px;object-fit:contain;border-radius:10px;margin-bottom:1rem;display:none;background:#f8f6f2;border:1px solid var(--border)}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
+.form-group input,.form-group select{width:100%;padding:9px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.18s}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.color-picker-row{display:flex;gap:7px;flex-wrap:wrap}
+.cdot{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.15s;flex-shrink:0}
+.cdot:hover{transform:scale(1.15)}
+.cdot.selected{border-color:var(--text);transform:scale(1.1)}
+.occasion-checks{display:flex;gap:6px;flex-wrap:wrap}
+.occ-check{padding:5px 12px;border-radius:16px;font-size:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all 0.15s;color:var(--text2)}
+.cat-chip{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:500;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:all 0.15s;color:var(--text2)}
+.cat-chip:hover{border-color:var(--accent2);color:var(--text)}
+.cat-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.occ-check.active{background:var(--accent3);border-color:var(--accent2);color:var(--accent)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem}
+.btn-secondary{padding:9px 18px;border-radius:var(--r);border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif}
+.btn-save{padding:9px 22px;border-radius:var(--r);border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif}
+
+/* BUILDER */
+.outfit-layout{display:grid;grid-template-columns:1fr 1.25fr;gap:1.25rem}
+@media(max-width:680px){.outfit-layout{grid-template-columns:1fr}}
+.panel{background:var(--surface);border-radius:var(--rlg);padding:1.2rem;border:1px solid var(--border)}
+.panel-title{font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:1rem}
+.mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px;max-height:360px;overflow-y:auto;padding-right:2px}
+.mini-card{background:var(--surface2);border-radius:var(--r);overflow:hidden;border:1.5px solid transparent;cursor:grab;transition:all 0.15s;aspect-ratio:3/4;display:flex;flex-direction:column}
+.mini-card:active{cursor:grabbing}
+.mini-card.dragging{opacity:0.4;transform:scale(0.95)}
+.canvas-slot.drag-over{border-color:var(--accent2);background:var(--accent3);transform:scale(1.05)}
+.mini-card:hover{border-color:var(--accent2);background:var(--accent3)}
+.mini-card.in-canvas{border-color:var(--accent);background:var(--accent3)}
+.mini-card .mini-img{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mini-card .mini-img img{width:100%;height:100%;object-fit:cover}
+.mini-card .mini-img i{font-size:22px;color:var(--text3)}
+.mini-card .mini-label{padding:3px 5px;font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+
+.outfit-canvas{background:var(--surface2);border-radius:12px;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:1rem}
+.canvas-row{display:flex;gap:8px;justify-content:center;width:100%}
+.canvas-slot{width:96px;aspect-ratio:3/4;border-radius:var(--r);overflow:hidden;border:2px dashed var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface);position:relative;cursor:pointer;transition:all 0.18s}
+.canvas-slot:hover{border-color:var(--accent2)}
+.canvas-slot.filled{border-style:solid;border-color:var(--accent)}
+.canvas-slot img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.slot-icon{font-size:22px;color:var(--text3)}
+.slot-lbl{font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;position:relative;z-index:1}
+.canvas-slot.filled .slot-lbl{color:#fff;background:rgba(0,0,0,0.45);padding:2px 5px;border-radius:4px;bottom:4px;position:absolute;z-index:2}
+.slot-remove{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.55);color:#fff;border:none;cursor:pointer;font-size:9px;display:none;align-items:center;justify-content:center;z-index:3}
+.canvas-slot:hover .slot-remove{display:flex}
+.outfit-actions{width:100%;display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.outfit-name-input{width:100%;padding:8px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none}
+.save-outfit-btn{width:100%;padding:10px;border-radius:var(--r);border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.2s}
+.save-outfit-btn:hover{opacity:0.85}
+.ai-suggest-btn{width:100%;padding:9px;border-radius:var(--r);border:1.5px solid var(--accent2);background:var(--accent3);color:var(--accent);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.18s}
+.ai-suggest-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ai-panel{background:var(--accent3);border:1px solid var(--accent2);border-radius:var(--r);padding:12px;margin-top:4px;display:none}
+.ai-panel.visible{display:block}
+.ai-label{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.ai-text{font-size:12px;color:var(--text2);line-height:1.6}
+.ai-loading{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3)}
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* OUTFITS */
+.outfits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+.outfit-card{background:var(--surface);border-radius:var(--rlg);overflow:hidden;border:1px solid var(--border);transition:transform 0.18s,box-shadow 0.18s}
+.outfit-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.outfit-preview{display:flex;background:var(--surface2);padding:10px;gap:5px;justify-content:center;flex-wrap:wrap;min-height:90px;align-items:center}
+.outfit-preview-item{width:62px;aspect-ratio:3/4;border-radius:8px;overflow:hidden;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.outfit-preview-item img{width:100%;height:100%;object-fit:cover}
+.outfit-preview-item i{font-size:18px;color:var(--text3)}
+.outfit-info{padding:10px 14px}
+.outfit-info h3{font-weight:500;font-size:14px;margin-bottom:3px}
+.outfit-info p{font-size:11px;color:var(--text3)}
+.outfit-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.outfit-tag{padding:2px 8px;border-radius:8px;font-size:10px;font-weight:500;background:var(--accent3);color:var(--accent)}
+
+/* WEAR MODAL */
+.wear-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.38);z-index:300;display:none;align-items:center;justify-content:center;padding:1rem}
+.wear-modal-overlay.open{display:flex}
+.wear-modal{background:var(--surface);border-radius:18px;width:100%;max-width:340px;padding:1.5rem;animation:mIn 0.2s ease}
+.wear-modal h3{font-family:'DM Serif Display',serif;font-size:19px;margin-bottom:0.5rem}
+.wear-modal p{font-size:13px;color:var(--text2);margin-bottom:1rem}
+.wear-modal-footer{display:flex;gap:8px}
+.btn-wear{flex:1;padding:10px;border-radius:var(--r);border:none;background:var(--green);color:#fff;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-cancel{flex:1;padding:10px;border-radius:var(--r);border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif}
+
+.toast{position:fixed;bottom:1.75rem;right:1.75rem;background:var(--accent);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.28s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateY(0)}
+
+@media(max-width:600px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  nav{padding:0 1rem}
+  .nav-tab{padding:6px 11px;font-size:12px}
+}
+
+
+</style>
+</head>
+<body>
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:flex;min-height:100vh;background:var(--bg);align-items:center;justify-content:center;padding:1.5rem">
+  <div style="background:var(--surface);border-radius:24px;padding:2.5rem 2rem;width:100%;max-width:380px;box-shadow:0 4px 32px rgba(0,0,0,0.10)">
+    <div style="font-family:'DM Serif Display',serif;font-size:32px;letter-spacing:3px;color:var(--text);text-align:center;margin-bottom:4px">FIT<span style="color:var(--accent2)">SYNC</span></div>
+    <div style="font-size:13px;color:var(--text3);text-align:center;margin-bottom:2rem">Your personal wardrobe, anywhere</div>
+    <div style="display:flex;background:var(--surface2);border-radius:12px;padding:3px;margin-bottom:1.5rem">
+      <button id="tab-signin" onclick="switchAuthTab('signin')" style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s">Sign In</button>
+      <button id="tab-signup" onclick="switchAuthTab('signup')" style="flex:1;padding:8px;border-radius:10px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s">Create Account</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input id="login-cc" type="text" value="+91" style="width:60px;padding:11px 8px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;text-align:center" />
+      <input id="login-mobile" type="tel" placeholder="Mobile number" style="flex:1;padding:11px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none" />
+    </div>
+    <div style="margin-bottom:10px;position:relative">
+      <input id="login-password" type="password" placeholder="Password (min 6 characters)" style="width:100%;padding:11px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')doAuth()" />
+      <button onclick="var i=document.getElementById('login-password');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px">&#128065;</button>
+    </div>
+    <div id="login-error" style="font-size:12px;color:#C0392B;margin-bottom:10px;display:none;text-align:center;line-height:1.5"></div>
+    <button id="auth-main-btn" onclick="doAuth()" style="width:100%;padding:12px;border-radius:var(--r);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px">Sign In</button>
+    <div id="forgot-row" style="text-align:center">
+      <button onclick="forgotPassword()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline">Forgot password?</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-screen" style="display:none">
+
+
+<nav>
+  <div class="logo">FIT<span>SYNC</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchView('wardrobe')">Wardrobe</button>
+    <button class="nav-tab" onclick="switchView('builder')">Builder</button>
+    <button class="nav-tab" onclick="switchView('outfits')">Outfits</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> Add Item</button>
+    <span id="nav-phone" style="font-size:12px;color:var(--text3)"></span>
+    <button onclick="doSignOut()" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Sign out</button>
+  </div>
+</nav>
+
+<main>
+  <!-- WARDROBE -->
+  <div class="view active" id="view-wardrobe">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem">
+      <h1 class="page-title" style="margin:0">My Wardrobe</h1>
+      <div class="search-bar" style="max-width:260px">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search…" id="search-input" oninput="renderWardrobe()" />
+      </div>
+    </div>
+    <div class="stats-row" id="stats-row"></div>
+    <div class="section-label">Filter by category</div>
+    <div class="filter-row" id="cat-filter-row"></div>
+    <div class="section-label" id="color-filter-label" style="display:none">Filter by color</div>
+    <div class="filter-row" id="color-filter-row"></div>
+    <div class="section-label" id="pattern-filter-label" style="display:none">Filter by pattern</div>
+    <div class="filter-row" id="pattern-filter-row"></div>
+    <div class="section-label" id="occ-filter-label" style="display:none">Filter by occasion</div>
+    <div class="filter-row" id="occ-filter-row"></div>
+    <div class="clothes-grid" id="clothes-grid"></div>
+  </div>
+
+  <!-- BUILDER -->
+  <div class="view" id="view-builder">
+    <h1 class="page-title">Outfit Builder</h1>
+    <div class="outfit-layout">
+      <div>
+        <div class="panel">
+          <div class="panel-title">Your Clothes</div>
+          <div class="filter-row" id="builder-filter-row" style="margin-bottom:4px"></div>
+          <div class="filter-row" id="builder-color-sub-row" style="margin-bottom:8px;padding-left:8px;border-left:2px solid var(--accent2);margin-left:4px;display:none"></div>
+          <div class="mini-grid" id="builder-grid"></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="panel">
+          <div class="panel-title">Canvas</div>
+          <div class="outfit-canvas" id="outfit-canvas"></div>
+          <div class="outfit-actions">
+            <input class="outfit-name-input" type="text" placeholder="Outfit name…" id="outfit-name" />
+            <div id="outfit-occasion-row" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+            <button class="ai-suggest-btn" onclick="getAISuggestion()"><i class="fas fa-wand-magic-sparkles"></i> AI Suggestion</button>
+            <div class="ai-panel" id="ai-panel">
+              <div class="ai-label"><i class="fas fa-sparkles"></i> Style advice</div>
+              <div class="ai-text" id="ai-text"></div>
+            </div>
+            <button class="save-outfit-btn" onclick="saveOutfit()">Save Outfit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTFITS -->
+  <div class="view" id="view-outfits">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem">
+      <h1 class="page-title" style="margin:0">Saved Outfits</h1>
+      <div class="search-bar" style="max-width:220px">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search outfits…" id="outfit-search" oninput="renderOutfits()" />
+      </div>
+    </div>
+    <div class="filter-row" id="outfit-occ-filter"></div>
+    <div class="outfits-grid" id="outfits-grid"></div>
+  </div>
+</main>
+
+<!-- ADD ITEM MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOvClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Add to Wardrobe</h2>
+      <button class="modal-close" onclick="closeModal()">&#215;</button>
+    </div>
+    <div id="img-processing-wrap" style="position:relative;margin-bottom:1rem;">
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave()">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <p>Drop photo here or click to upload</p>
+        <span>JPG, PNG, WEBP</span>
+      </div>
+      <img id="preview-img" class="preview-img" onclick="document.getElementById('file-input').click()" style="cursor:pointer" title="Click to change photo" />
+      <div id="processing-overlay" style="display:none;position:absolute;inset:0;background:rgba(248,246,242,0.92);border-radius:10px;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+        <div class="spinner" style="width:22px;height:22px;border-width:3px"></div>
+        <div id="processing-label" style="font-size:12px;font-weight:500;color:var(--text2)">Analysing image…</div>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept="image/*" onchange="handleFileSelect(event)" />
+    <div id="item-details-form" style="display:none">
+      <div class="form-group">
+        <label>Category</label>
+        <input type="hidden" id="item-category" value="" />
+        <div style="display:flex;gap:7px;flex-wrap:wrap" id="category-chips">
+          <div class="cat-chip" onclick="selectCategory('Tops')">Tops</div>
+          <div class="cat-chip" onclick="selectCategory('Bottoms')">Bottoms</div>
+          <div class="cat-chip" onclick="selectCategory('Dresses')">Dresses</div>
+          <div class="cat-chip" onclick="selectCategory('Outerwear')">Outerwear</div>
+          <div class="cat-chip" onclick="selectCategory('Shoes')">Shoes</div>
+          <div class="cat-chip" onclick="selectCategory('Accessories')">Accessories</div>
+          <div class="cat-chip" onclick="selectCategory('Bags')">Bags</div>
+          <div class="cat-chip" onclick="selectCategory('Activewear')">Activewear</div>
+        </div>
+      </div>
+      <div class="form-group"><label>Primary Colour</label>
+        <div class="color-picker-row" id="color-picker-row"></div>
+      </div>
+      <div class="form-group" id="accent-group"><label>Accent Colour <span style="font-size:10px;color:var(--text3);font-weight:400">(optional — for multicolour items)</span></label>
+        <div class="color-picker-row" id="accent-picker-row"></div>
+      </div>
+      <div class="form-group"><label>Pattern</label>
+        <div id="pattern-detected-banner" style="display:none;margin-bottom:8px"></div>
+        <div class="occasion-checks" id="pattern-checks"></div>
+      </div>
+      <div class="form-group"><label>Occasions</label>
+        <div class="occasion-checks" id="occasion-checks"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveItem()">Add to Wardrobe</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WEAR MODAL -->
+<div class="wear-modal-overlay" id="wear-modal-overlay">
+  <div class="wear-modal">
+    <h3 id="wear-modal-title">Log a wear</h3>
+    <p id="wear-modal-desc">Mark this item as worn today?</p>
+    <div class="wear-modal-footer">
+      <button class="btn-cancel" onclick="closeWearModal()">Cancel</button>
+      <button class="btn-wear" onclick="confirmWear()">Log Wear</button>
+    </div>
+  </div>
+</div>
+
+<div class="wear-modal-overlay" id="delete-modal-overlay">
+  <div class="wear-modal">
+    <h3 id="delete-modal-title">Remove item</h3>
+    <p id="delete-modal-desc">Are you sure you want to remove this item from your wardrobe?</p>
+    <div class="wear-modal-footer">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn-wear" style="background:#C0392B" onclick="doDelete()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<div class="wear-modal-overlay" id="delete-outfit-modal-overlay">
+  <div class="wear-modal">
+    <h3 id="delete-outfit-modal-title">Delete outfit</h3>
+    <p id="delete-outfit-modal-desc">Are you sure you want to delete this outfit?</p>
+    <div class="wear-modal-footer">
+      <button class="btn-cancel" onclick="closeDeleteOutfitModal()">Cancel</button>
+      <button class="btn-wear" style="background:#C0392B" onclick="doDeleteOutfit()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+
+</div><!-- /app-screen -->
+
+<!-- Firebase SDK — must be before app script -->
+</div><!-- /app-screen -->
+<script>
+// ═══════════════════════════════════════════════════════════
+// Firebase REST API auth + Firestore — no external SDK required
+// ═══════════════════════════════════════════════════════════
+const FB_API_KEY="AIzaSyB4jYD4NMPh_XZr6Fj_kQBnRFMYKs0_KT0";
+const FB_PROJECT="fitsync-2332a";
+const FB_AUTH_URL="https://identitytoolkit.googleapis.com/v1/accounts";
+const FB_DB_URL="https://firestore.googleapis.com/v1/projects/"+FB_PROJECT+"/databases/(default)/documents";
+
+let _idToken=null,_uid=null,_currentUser=null;
+
+// Firestore type converters
+function toFS(obj){
+  function cv(v){
+    if(v===null||v===undefined)return{nullValue:null};
+    if(typeof v==='boolean')return{booleanValue:v};
+    if(typeof v==='number')return{doubleValue:v};
+    if(typeof v==='string')return{stringValue:v};
+    if(Array.isArray(v))return{arrayValue:{values:v.map(cv)}};
+    if(typeof v==='object')return{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,cv(x)]))}};
+    return{stringValue:String(v)};
+  }
+  return{fields:Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,cv(v)]))};
+}
+function fromFS(doc){
+  if(!doc||!doc.fields)return null;
+  function pv(v){
+    if('nullValue'in v)return null;
+    if('booleanValue'in v)return v.booleanValue;
+    if('integerValue'in v)return parseInt(v.integerValue);
+    if('doubleValue'in v)return v.doubleValue;
+    if('stringValue'in v)return v.stringValue;
+    if('arrayValue'in v)return(v.arrayValue.values||[]).map(pv);
+    if('mapValue'in v)return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,x])=>[k,pv(x)]));
+    return null;
+  }
+  return Object.fromEntries(Object.entries(doc.fields).map(([k,v])=>[k,pv(v)]));
+}
+async function dbGet(path){
+  const r=await fetch(FB_DB_URL+"/"+path,{headers:{"Authorization":"Bearer "+_idToken}});
+  if(r.status===404)return null;
+  return fromFS(await r.json());
+}
+async function dbSet(path,obj){
+  const fields=Object.keys(obj).map(k=>"updateMask.fieldPaths="+k).join("&");
+  await fetch(FB_DB_URL+"/"+path+"?"+fields,{
+    method:"PATCH",
+    headers:{"Authorization":"Bearer "+_idToken,"Content-Type":"application/json"},
+    body:JSON.stringify(toFS(obj))
+  });
+}
+
+// Load/Save
+async function load(){
+  if(!_currentUser||!_idToken){items=[];outfits=[];return;}
+  try{
+    const d=await dbGet("users/"+_uid);
+    if(d){items=d.items||[];outfits=d.outfits||[];}
+    else{items=[];outfits=[];}
+  }catch(e){console.error("load",e);items=[];outfits=[];}
+}
+let _saveTimer=null;
+function save(){
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(async()=>{
+    if(!_currentUser||!_idToken)return;
+    try{await dbSet("users/"+_uid,{items,outfits,updatedAt:Date.now()});}
+    catch(e){console.error("save",e);}
+  },800);
+}
+
+// Auth
+let _authMode='signin';
+function mobileToEmail(){
+  const cc=document.getElementById('login-cc').value.trim().replace('+','');
+  const mob=document.getElementById('login-mobile').value.trim();
+  return cc+mob+'@fitsync.app';
+}
+function switchAuthTab(mode){
+  _authMode=mode;
+  const isSignup=mode==='signup';
+  document.getElementById('tab-signin').style.background=isSignup?'transparent':'var(--accent)';
+  document.getElementById('tab-signin').style.color=isSignup?'var(--text2)':'#fff';
+  document.getElementById('tab-signup').style.background=isSignup?'var(--accent)':'transparent';
+  document.getElementById('tab-signup').style.color=isSignup?'#fff':'var(--text2)';
+  document.getElementById('auth-main-btn').textContent=isSignup?'Create Account':'Sign In';
+  document.getElementById('forgot-row').style.display=isSignup?'none':'block';
+  document.getElementById('login-error').style.display='none';
+}
+async function doAuth(){
+  const mob=document.getElementById('login-mobile').value.trim();
+  const pw=document.getElementById('login-password').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('auth-main-btn');
+  errEl.style.display='none';
+  if(!mob||mob.length<7){errEl.textContent='Enter a valid mobile number';errEl.style.display='block';return;}
+  if(!pw||pw.length<6){errEl.textContent='Password must be at least 6 characters';errEl.style.display='block';return;}
+  btn.textContent='Please wait…';btn.disabled=true;
+  const email=mobileToEmail();
+  const endpoint=_authMode==='signup'
+    ?FB_AUTH_URL+":signUp?key="+FB_API_KEY
+    :FB_AUTH_URL+":signInWithPassword?key="+FB_API_KEY;
+  try{
+    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw,returnSecureToken:true})});
+    const d=await r.json();
+    if(d.error){
+      const msgs={'EMAIL_EXISTS':'Account exists. Sign in instead.','INVALID_PASSWORD':'Incorrect password.','INVALID_LOGIN_CREDENTIALS':'Incorrect number or password.','EMAIL_NOT_FOUND':'No account found. Create one above.','WEAK_PASSWORD':'Password must be at least 6 characters.','TOO_MANY_ATTEMPTS_TRY_LATER':'Too many attempts. Try later.'};
+      errEl.textContent=msgs[d.error.message]||d.error.message;
+      errEl.style.display='block';
+      btn.textContent=_authMode==='signup'?'Create Account':'Sign In';
+      btn.disabled=false;
+      return;
+    }
+    _idToken=d.idToken;_uid=d.localId;
+    _currentUser={uid:d.localId,email:d.email};
+    await onSignedIn();
+  }catch(e){
+    console.error('doAuth error:',e);
+    errEl.textContent='Error: '+e.message;
+    errEl.style.display='block';
+    btn.textContent=_authMode==='signup'?'Create Account':'Sign In';
+    btn.disabled=false;
+  }
+}
+function forgotPassword(){
+  document.getElementById('login-error').textContent='Contact support to reset your password.';
+  document.getElementById('login-error').style.display='block';
+}
+async function doSignOut(){
+  _idToken=null;_uid=null;_currentUser=null;items=[];outfits=[];
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app-screen').style.display='none';
+}
+async function onSignedIn(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  const mob=(_currentUser.email||'').replace('@fitsync.app','');
+  document.getElementById('nav-phone').textContent='+'+mob.slice(0,2)+' '+mob.slice(2);
+  showToast('Welcome back!');
+  await load();
+  renderWardrobe();
+}
+
+
+const COLORS=[
+  {name:'White',hex:'#FFFFFF',border:'#CCC',family:'Neutrals'},
+  {name:'Cream',hex:'#F5EFE0',border:'#D0C8B0',family:'Neutrals'},
+  {name:'Beige',hex:'#D4B896',family:'Neutrals'},
+  {name:'Gray',hex:'#888888',family:'Neutrals'},
+  {name:'Black',hex:'#1A1A1A',family:'Neutrals'},
+  {name:'Blush',hex:'#EDCDC2',border:'#C8A090',family:'Pink'},
+  {name:'Salmon',hex:'#E8967A',family:'Pink'},
+  {name:'Pink',hex:'#F4A0B5',family:'Pink'},
+  {name:'Hot Pink',hex:'#E0457B',family:'Pink'},
+  {name:'Dusty Rose',hex:'#C4848A',family:'Pink'},
+  {name:'Red',hex:'#C0392B',family:'Red'},
+  {name:'Burgundy',hex:'#800020',family:'Red'},
+  {name:'Rust',hex:'#B54A2A',family:'Red'},
+  {name:'Orange',hex:'#E07830',family:'Orange'},
+  {name:'Mustard',hex:'#D4A017',family:'Yellow'},
+  {name:'Yellow',hex:'#F0D060',family:'Yellow'},
+  {name:'Camel',hex:'#C19A6B',family:'Brown'},
+  {name:'Brown',hex:'#7B5B3A',family:'Brown'},
+  {name:'Tan',hex:'#C8A87A',family:'Brown'},
+  {name:'Khaki',hex:'#A89060',family:'Brown'},
+  {name:'Olive',hex:'#6B7A45',family:'Green'},
+  {name:'Sage',hex:'#7C9E8A',family:'Green'},
+  {name:'Green',hex:'#2E7D32',family:'Green'},
+  {name:'Mint',hex:'#A8D8C0',family:'Green'},
+  {name:'Baby Blue',hex:'#A8C8E8',family:'Blue'},
+  {name:'Denim',hex:'#5B7FA6',family:'Blue'},
+  {name:'Navy',hex:'#1B2A4A',family:'Blue'},
+  {name:'Cobalt',hex:'#1A4FA0',family:'Blue'},
+  {name:'Lilac',hex:'#C8A8D8',family:'Purple'},
+  {name:'Lavender',hex:'#B090C8',family:'Purple'},
+  {name:'Purple',hex:'#7B5EA7',family:'Purple'},
+];
+const COLOR_FAMILIES=[
+  {name:'Neutrals',swatch:'#C8B89A',members:['White','Cream','Beige','Gray','Black']},
+  {name:'Pink',swatch:'#F4A0B5',members:['Blush','Salmon','Pink','Hot Pink','Dusty Rose']},
+  {name:'Red',swatch:'#C0392B',members:['Red','Burgundy','Rust']},
+  {name:'Orange',swatch:'#E07830',members:['Orange']},
+  {name:'Yellow',swatch:'#F0D060',members:['Mustard','Yellow']},
+  {name:'Brown',swatch:'#A07848',members:['Camel','Brown','Tan','Khaki']},
+  {name:'Green',swatch:'#4A8A50',members:['Olive','Sage','Green','Mint']},
+  {name:'Blue',swatch:'#3870B0',members:['Baby Blue','Denim','Navy','Cobalt']},
+  {name:'Purple',swatch:'#8868B8',members:['Lilac','Lavender','Purple']},
+];
+const PATTERNS=['Solid','Striped','Checked','Floral','Printed','Geometric'];
+
+function getColorFamily(colorName){
+  const c=COLORS.find(x=>x.name===colorName);
+  return c?c.family:'';
+}
+const OCCASIONS=['Casual','Work','Evening','Weekend','Sport','Beach','Formal','Date Night'];
+const CAT_ICONS={'Tops':'fa-shirt','Bottoms':'fa-circle-dot','Dresses':'fa-person-dress','Outerwear':'fa-vest','Shoes':'fa-shoe-prints','Accessories':'fa-glasses','Bags':'fa-bag-shopping','Activewear':'fa-person-running'};
+const SLOT_CONFIG=[{key:'top',label:'Top',icon:'fa-shirt'},{key:'bottom',label:'Bottom',icon:'fa-circle-dot'},{key:'shoes',label:'Shoes',icon:'fa-shoe-prints'},{key:'acc',label:'Extra',icon:'fa-plus'}];
+const SLOT_MAP={'Tops':'top','Outerwear':'top','Bottoms':'bottom','Dresses':'bottom','Shoes':'shoes','Activewear':'top','Accessories':'acc','Bags':'acc'};
+
+let items=[],outfits=[];
+let selectedColor=null,autoDetectedColor=null,selectedAccent=null,detectedPattern='Solid',autoDetectedPattern=null,_skinThreshold=0,selectedOccasions=[];
+let activeFilter='All',activeColorFilter='All',activeOccFilter='All',activePatternFilter='All';
+let builderCatFilter='All',builderColorFilter='All';
+let outfitSlots={top:null,bottom:null,shoes:null,acc:null};
+let outfitOccasions=[];
+let pendingWearId=null;
+let outfitOccFilter='All';
+let currentImg=null;
+
+// load/save handled by Firebase REST API above
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach((el,i)=>el.classList.toggle('active',['wardrobe','builder','outfits'][i]===v));
+  document.getElementById('view-'+v).classList.add('active');
+  if(v==='wardrobe')renderWardrobe();
+  if(v==='builder')renderBuilder();
+  if(v==='outfits')renderOutfits();
+}
+
+function setupModalClickOutside(){
+  // Use document-level listener scoped to the modal overlay
+  if(window._modalClickOutsideSet)return;
+  window._modalClickOutsideSet=true;
+  document.addEventListener('click',function(e){
+    // Only close if the click didn't originate inside the picker's form-group
+    if(_accentPickerOpen){
+      const accentGroup=document.getElementById('accent-group');
+      if(accentGroup&&!accentGroup.contains(e.target)){
+        _accentPickerOpen=false;
+        renderAccentPicker(false);
+      }
+    }
+    if(_colorPickerOpen){
+      const colorFormGroup=document.getElementById('color-picker-row')?.closest('.form-group');
+      if(colorFormGroup&&!colorFormGroup.contains(e.target)){
+        _colorPickerOpen=false;
+        renderColorPicker(false);
+      }
+    }
+  });
+}
+
+function openModal(){
+  currentImg=null;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(setupModalClickOutside,0);
+  const previewEl=document.getElementById('preview-img');
+  previewEl.style.display='none';previewEl.src='';
+  document.getElementById('drop-zone').style.display='block';
+  document.getElementById('processing-overlay').style.display='none';
+  document.getElementById('item-details-form').style.display='none';
+  document.getElementById('item-category').value='';
+  document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
+  selectedColor=null;autoDetectedColor=null;selectedAccent=null;detectedPattern='Solid';autoDetectedPattern=null;selectedOccasions=[];_colorPickerOpen=false;_accentPickerOpen=false;
+  document.getElementById('accent-group').style.display='none';
+  renderColorPicker(false);renderOccasionChecks();
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function handleOvClick(e){if(e.target.id==='modal-overlay')closeModal();}
+
+function handleFileSelect(e){const f=e.target.files[0];if(f)readFile(f);}
+function handleDragOver(e){e.preventDefault();document.getElementById('drop-zone').classList.add('drag-over');}
+function handleDragLeave(){document.getElementById('drop-zone').classList.remove('drag-over');}
+function handleDrop(e){
+  e.preventDefault();document.getElementById('drop-zone').classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/'))readFile(f);
+}
+function showProcessing(label){
+  const el=document.getElementById('processing-overlay');
+  el.style.cssText='display:flex;position:absolute;inset:0;background:rgba(255,255,255,0.88);border-radius:8px;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:10';
+  document.getElementById('processing-label').textContent=label||'Detecting colour…';
+}
+function hideProcessing(){
+  document.getElementById('processing-overlay').style.display='none';
+}
+
+function readFile(f){
+  const r=new FileReader();
+  r.onload=ev=>{
+    const original=ev.target.result;
+    const tmpImg=new Image();
+    tmpImg.onload=()=>{
+      const previewEl=document.getElementById('preview-img');
+      previewEl.src=original;
+      previewEl.style.display='block';
+      document.getElementById('drop-zone').style.display='none';
+      document.getElementById('item-details-form').style.display='block';
+      // Draw onto canvas (for colour detection) then store original
+      const MAX=800;
+      const scale=Math.min(1,MAX/Math.max(tmpImg.naturalWidth,tmpImg.naturalHeight));
+      const W=Math.round(tmpImg.naturalWidth*scale);
+      const H=Math.round(tmpImg.naturalHeight*scale);
+      const canvas=document.createElement('canvas');
+      canvas.width=W; canvas.height=H;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle='#fff';
+      ctx.fillRect(0,0,W,H);
+      ctx.drawImage(tmpImg,0,0,W,H);
+      currentImg=original;
+      showProcessing('Detecting colour…');
+      autoDetectColor(ctx,W,H);
+    };
+    tmpImg.src=original;
+  };
+  r.readAsDataURL(f);
+}
+
+function rgbToHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+  const l=(mx+mn)/2;
+  if(d===0)return[0,0,l];
+  const s=d/(1-Math.abs(2*l-1));
+  let h=0;
+  if(mx===r)h=((g-b)/d+6)%6;
+  else if(mx===g)h=(b-r)/d+2;
+  else h=(r-g)/d+4;
+  return[h*60,s,l];
+}
+
+function isSkinTone(r,g,b){
+  // Skin tones are warm AND mid-to-bright in luminance.
+  // Brown/camel fabrics share the same hue but are darker.
+  // Key insight: real skin has luminance Y > 80, browns are typically Y < 100
+  // but more importantly skin has a constrained R-G and R-B relationship.
+  const y=0.299*r+0.587*g+0.114*b;
+  // Only consider pixels bright enough to be skin (rules out dark browns)
+  if(y<90)return false;
+  // Skin must have R dominant over G and B by meaningful margin
+  if(r<=g||r<=b)return false;
+  if(r-g<15||r-b<25)return false;
+  // Saturation check: skin isn't too saturated (rules out orange/red fabric)
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+  const sat=(mx-mn)/mx;
+  if(sat>0.55)return false; // too vivid to be skin
+  // YCbCr confirmation within narrowed range
+  const cb=-0.169*r-0.331*g+0.500*b+128;
+  const cr=0.500*r-0.419*g-0.081*b+128;
+  return cb>=80&&cb<=120&&cr>=135&&cr<=170;
+}
+
+function collectPixels(data,w,h,step){
+  // First pass: measure what % of valid pixels are skin-toned
+  // Only suppress skin if >15% of pixels — meaning a person is actually present
+  // (avoids misclassifying camel/beige garments as skin)
+  let totalValid=0,skinCount=0;
+  for(let y=0;y<h;y+=step){
+    for(let x=0;x<w;x+=step){
+      const i=(y*w+x)*4;
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const brightness=(r+g+b)/3;
+      if(brightness>248||brightness<15)continue;
+      if(Math.max(r,g,b)-Math.min(r,g,b)<12)continue;
+      totalValid++;
+      if(isSkinTone(r,g,b))skinCount++;
+    }
+  }
+  const hasPerson=totalValid>0&&(skinCount/totalValid)>0.22;
+
+  // Second pass: collect pixels, filtering skin only if person detected
+  const pixels=[];
+  for(let y=0;y<h;y+=step){
+    for(let x=0;x<w;x+=step){
+      const i=(y*w+x)*4;
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const brightness=(r+g+b)/3;
+      if(brightness>248||brightness<15)continue;
+      if(Math.max(r,g,b)-Math.min(r,g,b)<12)continue;
+      if(hasPerson&&isSkinTone(r,g,b))continue;
+      const [hue,s,l]=rgbToHsl(r,g,b);
+      if(s<0.1)continue;
+      pixels.push({r,g,b,h:hue,s,l});
+    }
+  }
+  return pixels;
+}
+
+function dominantCluster(pixels){
+  if(!pixels.length)return null;
+  const anchor=pixels.reduce((best,p)=>p.s>best.s?p:best,pixels[0]);
+  const cluster=pixels.filter(p=>{
+    let diff=Math.abs(p.h-anchor.h);
+    if(diff>180)diff=360-diff;
+    return diff<=20;
+  });
+  const use=cluster.length>=3?cluster:pixels;
+  let rS=0,gS=0,bS=0,wS=0;
+  use.forEach(p=>{rS+=p.r*p.s;gS+=p.g*p.s;bS+=p.b*p.s;wS+=p.s;});
+  return{r:rS/wS,g:gS/wS,b:bS/wS,anchorH:anchor.h};
+}
+
+function detectPattern(data,w,h,step){
+  let hDiffs=0,vDiffs=0,hCount=0,vCount=0;
+  const hues=[];
+  for(let y=0;y<h;y+=step){
+    for(let x=0;x<w;x+=step){
+      const i=(y*w+x)*4;
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const br=(r+g+b)/3;
+      if(br>248||br<15)continue;
+      const [hue,s]=rgbToHsl(r,g,b);
+      if(s<0.08)continue;
+      hues.push(hue);
+      if(x+step<w){
+        const j=(y*w+(x+step))*4;
+        const [h2,s2]=rgbToHsl(data[j],data[j+1],data[j+2]);
+        if(s2>0.08){let d=Math.abs(hue-h2);if(d>180)d=360-d;hDiffs+=d;hCount++;}
+      }
+      if(y+step<h){
+        const j=((y+step)*w+x)*4;
+        const [h2,s2]=rgbToHsl(data[j],data[j+1],data[j+2]);
+        if(s2>0.08){let d=Math.abs(hue-h2);if(d>180)d=360-d;vDiffs+=d;vCount++;}
+      }
+    }
+  }
+  if(!hues.length)return'Solid';
+  // Use coarser 40-degree buckets — lighting/shadow variation in a solid fabric
+  // causes ±10-15° hue shift which was inflating uniqueHues with 20° buckets
+  const uniqueHues=new Set(hues.map(h=>Math.round(h/40)*40)).size;
+  const avgHDiff=hCount?hDiffs/hCount:0;
+  const avgVDiff=vCount?vDiffs/vCount:0;
+  const totalVariance=(avgHDiff+avgVDiff)/2;
+  // Solid: low variance OR few unique hues (shadows on solid fabric = low uniqueHues)
+  if(uniqueHues<=2||totalVariance<12)return'Solid';
+  // Striped: variance strongly in one direction only
+  if(uniqueHues<=3&&Math.abs(avgHDiff-avgVDiff)>15&&totalVariance<40)return'Striped';
+  // Checked: variance in both directions, limited colours
+  if(uniqueHues<=4&&avgHDiff>15&&avgVDiff>15&&totalVariance<35)return'Checked';
+  // Floral/Printed: high variance AND many distinct hues (not just lighting variation)
+  if(totalVariance>45&&uniqueHues>=5)return'Floral';
+  if(totalVariance>35&&uniqueHues>=4)return'Printed';
+  // Geometric: moderate multi-colour variance
+  if(uniqueHues>=4&&totalVariance>25)return'Geometric';
+  return'Solid';
+}
+
+function autoDetectColor(ctx,w,h,canvas){
+  hideProcessing();
+  const data=ctx.getImageData(0,0,w,h).data;
+  const step=Math.max(1,Math.floor(Math.min(w,h)/100));
+
+  // Pre-compute skin ratio for this image (used by collectPixels + detectAccentColor)
+  let _tv=0,_sc=0;
+  for(let _y=0;_y<h;_y+=step){for(let _x=0;_x<w;_x+=step){
+    const _i=(_y*w+_x)*4,_r=data[_i],_g=data[_i+1],_b=data[_i+2],_br=(_r+_g+_b)/3;
+    if(_br>248||_br<15)continue;if(Math.max(_r,_g,_b)-Math.min(_r,_g,_b)<12)continue;
+    _tv++;if(isSkinTone(_r,_g,_b))_sc++;
+  }}
+  _skinThreshold=_tv>0?_sc/_tv:0;
+
+  detectedPattern=detectPattern(data,w,h,step);
+  autoDetectedPattern=detectedPattern;
+
+  const allPixels=collectPixels(data,w,h,step);
+
+  if(!allPixels.length){
+    const fallback=[];
+    for(let y=0;y<h;y+=step){
+      for(let x=0;x<w;x+=step){
+        const i=(y*w+x)*4;
+        const r=data[i],g=data[i+1],b=data[i+2];
+        if((r+g+b)/3>240||(r+g+b)/3<15)continue;
+        fallback.push({r,g,b});
+      }
+    }
+    if(!fallback.length){renderColorPicker(false);renderPatternChecks();return;}
+    let rS=0,gS=0,bS=0;
+    fallback.forEach(p=>{rS+=p.r;gS+=p.g;bS+=p.b;});
+    matchAndSet(rS/fallback.length,gS/fallback.length,bS/fallback.length);
+    selectedAccent=null;renderAccentPicker(false);renderPatternChecks();_skinThreshold=0;
+    return;
+  }
+
+  const dom=dominantCluster(allPixels);
+  matchAndSet(dom.r,dom.g,dom.b);
+  detectAccentColor(data,w,h,step,dom.anchorH,_skinThreshold);
+  renderPatternChecks();
+}
+
+function detectAccentColor(data,w,h,step,excludeHue,skinThreshold){
+  const remaining=[];
+  for(let y=0;y<h;y+=step){
+    for(let x=0;x<w;x+=step){
+      const i=(y*w+x)*4;
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const brightness=(r+g+b)/3;
+      if(brightness>248||brightness<15)continue;
+      if(Math.max(r,g,b)-Math.min(r,g,b)<12)continue;
+      if(skinThreshold>0.22&&isSkinTone(r,g,b))continue;
+      const [hue,s,l]=rgbToHsl(r,g,b);
+      if(s<0.1)continue;
+      if(excludeHue!==null&&excludeHue!==undefined){
+        let diff=Math.abs(hue-excludeHue);
+        if(diff>180)diff=360-diff;
+        if(diff<=25)continue;
+      }
+      remaining.push({r,g,b,h:hue,s,l});
+    }
+  }
+  if(remaining.length<5){selectedAccent=null;renderAccentPicker(false);return;}
+  const acc=dominantCluster(remaining);
+  if(!acc){selectedAccent=null;renderAccentPicker(false);return;}
+  let best=null,bestDist=Infinity;
+  COLORS.forEach(c=>{
+    const hx=c.hex.replace('#','');
+    const cr=parseInt(hx.slice(0,2),16),cg=parseInt(hx.slice(2,4),16),cb=parseInt(hx.slice(4,6),16);
+    const dr=acc.r-cr,dg=acc.g-cg,db=acc.b-cb,rm=(acc.r+cr)/2;
+    const dist=Math.sqrt((2+rm/256)*dr*dr+4*dg*dg+(2+(255-rm)/256)*db*db);
+    if(dist<bestDist){bestDist=dist;best=c.name;}
+  });
+  if(best&&best!==selectedColor){
+    selectedAccent=best;renderAccentPicker(true);
+    showToast('Accent detected: '+best+' ✓');
+  } else {
+    selectedAccent=null;renderAccentPicker(false);
+  }
+}
+
+function matchAndSet(avgR,avgG,avgB){
+  // Compute the hue of the average colour so we can apply family-aware tiebreaking
+  function avgHue(r,g,b){
+    r/=255;g/=255;b/=255;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+    if(d===0)return-1;
+    let h=0;
+    if(mx===r)h=((g-b)/d+6)%6;
+    else if(mx===g)h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    return h*60;
+  }
+  const hue=avgHue(avgR,avgG,avgB);
+
+  // Family hints based on hue angle — if avg hue strongly suggests a family,
+  // penalise colours from other families so neutrals don't steal vivid results
+  const FAMILY_HINTS={
+    'Yellow':[45,75],   // hue 45-75 = yellow
+    'Orange':[20,45],
+    'Red':[0,20],
+    'Pink':[300,360],
+    'Purple':[260,300],
+    'Blue':[200,260],
+    'Green':[100,170],
+    'Brown':[25,45],    // overlaps orange but darker
+  };
+  function inRange(h,range){
+    if(!range)return false;
+    if(range[0]<=range[1])return h>=range[0]&&h<=range[1];
+    return h>=range[0]||h<=range[1];
+  }
+
+  let best=null,bestDist=Infinity;
+  COLORS.forEach(c=>{
+    const hx=c.hex.replace('#','');
+    const cr=parseInt(hx.slice(0,2),16),cg=parseInt(hx.slice(2,4),16),cb=parseInt(hx.slice(4,6),16);
+    const dr=avgR-cr,dg=avgG-cg,db=avgB-cb;
+    const rm=(avgR+cr)/2;
+    let dist=Math.sqrt((2+rm/256)*dr*dr+4*dg*dg+(2+(255-rm)/256)*db*db);
+    // If the average hue is clearly in a family, penalise colours from other families
+    if(hue>=0){
+      const inHintFamily=Object.entries(FAMILY_HINTS).some(([fam,range])=>
+        inRange(hue,range)&&c.family===fam
+      );
+      const someHintMatches=Object.entries(FAMILY_HINTS).some(([fam,range])=>inRange(hue,range));
+      if(someHintMatches&&!inHintFamily&&c.family!=='Neutrals'){
+        dist*=1.4; // penalise wrong-family colours
+      }
+    }
+    if(dist<bestDist){bestDist=dist;best=c.name;}
+  });
+  selectedColor=best;
+  autoDetectedColor=best;
+  renderColorPicker(true);
+  showToast('Colour detected: '+best+' ✓');
+}
+
+let _accentPickerOpen=false;
+
+function renderAccentPicker(autoDetected){
+  const cd=COLORS.find(c=>c.name===selectedAccent);
+  if(autoDetected) _accentPickerOpen=false;
+
+  // Top banner: auto-detected accent OR manually chosen accent OR empty state
+  let topBanner='';
+  if(cd){
+    topBanner=`
+    <div style="display:flex;align-items:center;gap:8px;background:${autoDetected?'var(--green-bg)':'var(--surface2)'};border:1px solid ${autoDetected?'#b2d8c0':'var(--border2)'};border-radius:var(--r);padding:8px 12px;margin-bottom:8px">
+      <span style="width:22px;height:22px;border-radius:50%;background:${cd.hex};border:1.5px solid ${cd.border||'rgba(0,0,0,0.12)'};flex-shrink:0;display:inline-block"></span>
+      <div style="flex:1;font-size:12px;font-weight:600;color:${autoDetected?'var(--green)':'var(--text)'}">
+        ${cd.name} <span style="font-weight:400;font-size:11px;color:${autoDetected?'#5a9070':'var(--text3)'}">· ${cd.family}${autoDetected?' · auto-detected':''}</span>
+      </div>
+      <button onclick="toggleAccentPicker(event)" style="padding:4px 10px;border-radius:8px;border:1px solid ${autoDetected?'#b2d8c0':'var(--border)'};background:transparent;color:${autoDetected?'var(--green)':'var(--text2)'};font-size:11px;font-weight:500;cursor:pointer">Change</button>
+      <button onclick="selectedAccent=null;_accentPickerOpen=false;renderAccentPicker(false)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:0 2px">&#215;</button>
+    </div>`;
+  } else {
+    topBanner=`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--r);padding:8px 12px;margin-bottom:8px;cursor:pointer" onclick="toggleAccentPicker(event)">
+      <span style="width:22px;height:22px;border-radius:50%;background:var(--surface3);border:1.5px dashed var(--border2);flex-shrink:0;display:inline-block"></span>
+      <div style="font-size:12px;color:var(--text3)">No accent colour — <span style="text-decoration:underline">tap to add</span></div>
+    </div>`;
+  }
+
+  // Palette — only visible when open
+  const grouped=_accentPickerOpen?COLOR_FAMILIES.map(fam=>{
+    const cols=COLORS.filter(c=>c.family===fam.name);
+    if(!cols.length)return'';
+    return`<div style="margin-bottom:6px">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">${fam.name}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">${cols.map(c=>`
+        <div class="cdot ${selectedAccent===c.name?'selected':''}" style="background:${c.hex};${c.border?'border-color:'+c.border+';':''}" title="${c.name}" onclick="event.stopPropagation();selectedAccent='${c.name}';_accentPickerOpen=false;renderAccentPicker(false)"></div>`).join('')}
+      </div></div>`;
+  }).join(''):'';
+
+  document.getElementById('accent-picker-row').innerHTML=topBanner+grouped;
+}
+
+function toggleAccentPicker(e){
+  if(e)e.stopPropagation();
+  _accentPickerOpen=!_accentPickerOpen;
+  renderAccentPicker(false);
+}
+
+function renderPatternChecks(){
+  document.getElementById('pattern-detected-banner').style.display='none';
+  document.getElementById('pattern-checks').innerHTML=PATTERNS.map(p=>`
+    <div class="occ-check ${detectedPattern===p?'active':''}" onclick="detectedPattern='${p}';renderPatternChecks()">${p}</div>`).join('');
+  const isSolid=detectedPattern==='Solid';
+  document.getElementById('accent-group').style.display=isSolid?'none':'block';
+  if(isSolid){selectedAccent=null;}
+}
+
+let _colorPickerOpen=false;
+
+function renderColorPicker(autoDetected){
+  const cd=COLORS.find(c=>c.name===selectedColor);
+  const adcd=COLORS.find(c=>c.name===autoDetectedColor);
+  const manuallyPicked=selectedColor&&autoDetectedColor&&selectedColor!==autoDetectedColor;
+  const familyMismatch=manuallyPicked&&cd&&adcd&&cd.family!==adcd.family;
+
+  // Top banner: auto-detected result OR mismatch warning OR manual override
+  let topBanner='';
+  if(autoDetected&&cd){
+    _colorPickerOpen=false; // collapse palette when fresh detection arrives
+    topBanner=`
+    <div style="display:flex;align-items:center;gap:10px;background:var(--green-bg);border:1px solid #b2d8c0;border-radius:var(--r);padding:9px 12px;margin-bottom:10px">
+      <span style="width:28px;height:28px;border-radius:50%;background:${cd.hex};border:2px solid ${cd.border||'rgba(0,0,0,0.12)'};flex-shrink:0;display:inline-block"></span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--green)">${cd.name} <span style="font-weight:400;color:#5a9070;font-size:12px">· ${cd.family}</span></div>
+        <div style="font-size:11px;color:#5a9070;display:flex;align-items:center;gap:3px"><i class="fas fa-wand-magic-sparkles" style="font-size:10px"></i> Auto-detected</div>
+      </div>
+      <button onclick="toggleColorPicker(event)" style="padding:5px 12px;border-radius:8px;border:1px solid #b2d8c0;background:transparent;color:var(--green);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap">Change</button>
+    </div>`;
+  } else if(manuallyPicked&&cd&&adcd){
+    topBanner=`
+    <div style="display:flex;align-items:center;gap:10px;background:${familyMismatch?'#FFF8EC':'var(--surface2)'};border:1px solid ${familyMismatch?'#F0C878':'var(--border2)'};border-radius:var(--r);padding:9px 12px;margin-bottom:10px">
+      <span style="width:22px;height:22px;border-radius:50%;background:${cd.hex};border:1.5px solid rgba(0,0,0,0.12);flex-shrink:0;display:inline-block"></span>
+      <div style="flex:1;font-size:12px;color:${familyMismatch?'#A86800':'var(--text2)'}">${familyMismatch?'<i class="fas fa-triangle-exclamation" style="margin-right:4px"></i>':''}<strong>${cd.name}</strong> · ${cd.family}${familyMismatch?` <em style="font-size:10px">(suggested: ${adcd.name})</em>`:''}</div>
+      <span onclick="revertToDetected()" style="font-size:11px;color:var(--text3);text-decoration:underline;cursor:pointer;white-space:nowrap">Revert</span>
+    </div>`;
+  } else if(!autoDetectedColor&&cd){
+    // Manually chosen with no auto-detection
+    topBanner=`
+    <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;margin-bottom:10px">
+      <span style="width:22px;height:22px;border-radius:50%;background:${cd.hex};border:1.5px solid rgba(0,0,0,0.12);flex-shrink:0;display:inline-block"></span>
+      <div style="font-size:12px;color:var(--text2);flex:1"><strong>${cd.name}</strong> · ${cd.family}</div>
+    </div>`;
+  }
+
+  // Grouped palette — only shown when _colorPickerOpen OR no auto-detection
+  const showPalette=_colorPickerOpen||!autoDetectedColor;
+  const grouped=showPalette?COLOR_FAMILIES.map(fam=>{
+    const cols=COLORS.filter(c=>c.family===fam.name);
+    if(!cols.length)return'';
+    return`<div style="margin-bottom:8px">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">${fam.name}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${cols.map(c=>`
+        <div class="cdot ${selectedColor===c.name?'selected':''}" style="background:${c.hex};${c.border?'border-color:'+c.border+';':''}" title="${c.name}" onclick="pickColor('${c.name}',event)"></div>`).join('')}
+      </div></div>`;
+  }).join(''):'';
+
+  const chooseLabel=!autoDetectedColor?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Choose colour:</div>`:'';
+  document.getElementById('color-picker-row').innerHTML=topBanner+chooseLabel+grouped;
+}
+
+function toggleColorPicker(e){
+  if(e)e.stopPropagation();
+  _colorPickerOpen=!_colorPickerOpen;
+  renderColorPicker(false);
+}
+
+function revertToDetected(){
+  if(!autoDetectedColor)return;
+  selectedColor=autoDetectedColor;
+  renderColorPicker(true);
+}
+function pickColor(n,e){
+  if(e)e.stopPropagation();
+  selectedColor=n;
+  _colorPickerOpen=false;
+  renderColorPicker(false);
+}
+
+function renderOccasionChecks(){
+  document.getElementById('occasion-checks').innerHTML=OCCASIONS.map(o=>`
+    <div class="occ-check ${selectedOccasions.includes(o)?'active':''}" onclick="toggleOcc('${o}')">${o}</div>`).join('');
+}
+function toggleOcc(o){
+  selectedOccasions=selectedOccasions.includes(o)?selectedOccasions.filter(x=>x!==o):[...selectedOccasions,o];
+  renderOccasionChecks();
+}
+
+function selectCategory(cat){
+  document.getElementById('item-category').value=cat;
+  document.querySelectorAll('.cat-chip').forEach(c=>c.classList.toggle('active',c.textContent===cat));
+}
+
+function saveItem(){
+  const cat=document.getElementById('item-category').value;
+  if(!cat){showToast('Please select a category');return;}
+  const name=cat;
+  items.unshift({
+    id:Date.now().toString(),name,category:cat,
+    color:selectedColor||'',colorFamily:getColorFamily(selectedColor||''),accentColor:selectedAccent||'',accentFamily:getColorFamily(selectedAccent||''),pattern:detectedPattern||'Solid',occasions:[...selectedOccasions],
+    img:currentImg||null,wears:0,
+    addedAt:new Date().toLocaleDateString()
+  });
+  currentImg=null;save();closeModal();
+  showToast(name+' added ✓');renderWardrobe();
+}
+
+function renderStats(){
+  const cats={};items.forEach(i=>cats[i.category]=(cats[i.category]||0)+1);
+  const topCat=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+  const totalWears=items.reduce((s,i)=>s+(i.wears||0),0);
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total Items</div><div class="stat-num">${items.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Saved Outfits</div><div class="stat-num">${outfits.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Wears</div><div class="stat-num">${totalWears}</div></div>
+    <div class="stat-card"><div class="stat-label">Top Category</div><div class="stat-num" style="font-size:15px;padding-top:5px">${topCat?topCat[0]:'—'}</div></div>`;
+}
+
+function renderCatFilters(){
+  const cats=['All',...new Set(items.map(i=>i.category))];
+  document.getElementById('cat-filter-row').innerHTML=cats.map(c=>`
+    <div class="chip ${c===activeFilter?'active':''}" onclick="setCatFilter('${c}')">${c}</div>`).join('');
+}
+function setCatFilter(c){activeFilter=c;renderWardrobe();}
+
+function renderColorFilters(){
+  const usedFamilies=new Set([
+    ...items.map(i=>i.colorFamily||getColorFamily(i.color||'')),
+    ...items.map(i=>i.accentFamily||getColorFamily(i.accentColor||''))
+  ].filter(Boolean));
+  const lbl=document.getElementById('color-filter-label');
+  const row=document.getElementById('color-filter-row');
+  if(usedFamilies.size===0){lbl.style.display='none';row.innerHTML='';return;}
+  lbl.style.display='block';
+  const hasMulticolour=items.some(i=>(i.pattern||'Solid')!=='Solid');
+  const families=[{name:'All',swatch:null},...(hasMulticolour?[{name:'Multicolour',swatch:'linear-gradient(135deg,#E05050 0%,#F0D060 33%,#50A0E0 66%,#70C070 100%)'}]:[]),...COLOR_FAMILIES.filter(f=>usedFamilies.has(f.name))];
+  row.innerHTML=families.map(f=>{
+    const active=activeColorFilter===f.name;
+    const swatch=f.swatch?`<span style="width:13px;height:13px;border-radius:50%;background:${f.swatch};border:1px solid rgba(0,0,0,0.15);flex-shrink:0;display:inline-block"></span> `:'';
+    return`<div class="chip ${active?'active':''}" style="display:flex;align-items:center;gap:5px" onclick="setColorFilter('${f.name}')">${swatch}${f.name==='All'?'All colours':f.name}</div>`;
+  }).join('');
+}
+function setColorFilter(c){activeColorFilter=c;renderWardrobe();}
+
+function renderPatternFilters(){
+  const used=new Set(items.map(i=>i.pattern||'Solid').filter(p=>p&&p!=='Solid'));
+  const lbl=document.getElementById('pattern-filter-label');
+  const row=document.getElementById('pattern-filter-row');
+  if(!used.size){lbl.style.display='none';row.innerHTML='';return;}
+  lbl.style.display='block';
+  // 'Multicolour' = any non-Solid pattern
+  const opts=['All','Solid',...PATTERNS.filter(p=>p!=='Solid'&&used.has(p))];
+  row.innerHTML=opts.map(p=>`<div class="chip ${activePatternFilter===p?'active':''}" onclick="setPatternFilter('${p}')">${p==='All'?'All patterns':p}</div>`).join('');
+}
+function setPatternFilter(p){activePatternFilter=p;renderWardrobe();}
+
+function renderOccFilters(){
+  const used=['All',...new Set(items.flatMap(i=>i.occasions||[]))];
+  const lbl=document.getElementById('occ-filter-label');
+  const row=document.getElementById('occ-filter-row');
+  if(used.length<=1){lbl.style.display='none';row.innerHTML='';return;}
+  lbl.style.display='block';
+  row.innerHTML=used.map(o=>`<div class="chip ${activeOccFilter===o?'active':''}" onclick="setOccFilter('${o}')">${o==='All'?'All occasions':o}</div>`).join('');
+}
+function setOccFilter(o){activeOccFilter=o;renderWardrobe();}
+
+function renderWardrobe(){
+  renderStats();renderCatFilters();renderColorFilters();renderPatternFilters();renderOccFilters();
+  const q=document.getElementById('search-input').value.toLowerCase();
+  const filtered=items.filter(it=>{
+    const matchCat=activeFilter==='All'||it.category===activeFilter;
+    const itFamily=it.colorFamily||getColorFamily(it.color||'');
+    const itAccentFamily=it.accentFamily||getColorFamily(it.accentColor||'');
+    const matchColor=activeColorFilter==='All'
+      ||(activeColorFilter==='Multicolour'&&(it.pattern||'Solid')!=='Solid')
+      ||itFamily===activeColorFilter||itAccentFamily===activeColorFilter;
+    const itemPattern=it.pattern||'Solid';
+    const matchPattern=activePatternFilter==='All'||itemPattern===activePatternFilter;
+    const matchOcc=activeOccFilter==='All'||(it.occasions||[]).includes(activeOccFilter);
+    const matchQ=!q||it.name.toLowerCase().includes(q)||it.category.toLowerCase().includes(q)||(it.color||'').toLowerCase().includes(q);
+    return matchCat&&matchColor&&matchPattern&&matchOcc&&matchQ;
+  });
+  const grid=document.getElementById('clothes-grid');
+  if(filtered.length===0){
+    grid.innerHTML=`<div class="empty-state"><i class="fas fa-shirt"></i><h3>${items.length===0?'Your wardrobe is empty':'No items found'}</h3><p>${items.length===0?'Click "Add Item" to get started':'Try a different filter or search'}</p></div>`;
+    return;
+  }
+  grid.innerHTML=filtered.map(item=>{
+    const cd=COLORS.find(c=>c.name===item.color);
+    const occs=(item.occasions||[]).slice(0,2).map(o=>`<span class="card-badge occasion-badge">${o}</span>`).join('');
+    const patternBadge=item.pattern&&item.pattern!=='Solid'?`<span class="card-badge" style="background:var(--surface3);color:var(--text2)">${item.pattern}</span>`:'';
+    const accentBadge=item.accentColor?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text3)">${(()=>{const ac=COLORS.find(c=>c.name===item.accentColor);return ac?`<span style="width:9px;height:9px;border-radius:50%;background:${ac.hex};border:1px solid rgba(0,0,0,0.12);display:inline-block"></span>`:''})()}${item.accentColor}</span>`:'';
+    return`<div class="cloth-card" id="card-${item.id}">
+      <div class="img-wrap">
+        ${item.img?`<img src="${item.img}" alt="${item.name}" />`:`<i class="fas ${CAT_ICONS[item.category]||'fa-shirt'} placeholder-icon"></i>`}
+      </div>
+      <button class="wear-btn" onclick="openWearModal('${item.id}',event)">+ Wear</button>
+      <button class="del-btn" onclick="openDeleteModal('${item.id}',event)" title="Remove item">&#215;</button>
+      <div class="card-body">
+        <div class="card-name">${item.name}</div>
+        <div class="card-meta">
+          ${cd?`<span class="color-swatch" style="background:${cd.hex};${cd.border?'border-color:'+cd.border:''}"></span>`:''}
+          <span class="card-badge wear-badge"><i class="fas fa-shirt" style="font-size:9px"></i> ${item.wears||0}x</span>
+          ${patternBadge}${accentBadge}
+          ${occs}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openWearModal(id,e){
+  e.stopPropagation();pendingWearId=id;
+  const it=items.find(i=>i.id===id);if(!it)return;
+  document.getElementById('wear-modal-title').textContent=it.name;
+  document.getElementById('wear-modal-desc').textContent=`Log a wear for "${it.name}"? Current count: ${it.wears||0}`;
+  document.getElementById('wear-modal-overlay').classList.add('open');
+}
+function closeWearModal(){document.getElementById('wear-modal-overlay').classList.remove('open');pendingWearId=null;}
+function confirmWear(){
+  if(!pendingWearId)return;
+  const it=items.find(i=>i.id===pendingWearId);if(!it)return;
+  it.wears=(it.wears||0)+1;save();closeWearModal();
+  showToast('Wear logged for '+it.name+' ✓');renderWardrobe();
+}
+
+let pendingDeleteId=null;
+
+function openDeleteModal(id,e){
+  e.stopPropagation();
+  pendingDeleteId=id;
+  const it=items.find(i=>i.id===id);if(!it)return;
+  document.getElementById('delete-modal-title').textContent='Remove "'+it.name+'"?';
+  document.getElementById('delete-modal-desc').textContent='This will permanently remove it from your wardrobe and any saved outfits.';
+  document.getElementById('delete-modal-overlay').classList.add('open');
+}
+
+function closeDeleteModal(){
+  pendingDeleteId=null;
+  document.getElementById('delete-modal-overlay').classList.remove('open');
+}
+
+function doDelete(){
+  if(!pendingDeleteId)return;
+  const id=pendingDeleteId;
+  const it=items.find(i=>i.id===id);if(!it)return;
+  items=items.filter(i=>i.id!==id);
+  outfits=outfits.map(o=>({...o,items:o.items.filter(oid=>oid!==id)}));
+  Object.keys(outfitSlots).forEach(k=>{if(outfitSlots[k]&&outfitSlots[k].id===id)outfitSlots[k]=null;});
+  save();
+  closeDeleteModal();
+  showToast('"'+it.name+'" removed');
+  renderWardrobe();
+}
+
+// ── Drag & Drop ──────────────────────────────────────────
+let _dragItemId=null;
+
+// Desktop HTML5 drag
+function onDragStart(e,id){
+  _dragItemId=id;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',id);
+  setTimeout(()=>e.target.classList.add('dragging'),0);
+}
+function onDragEnd(e){
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.canvas-slot').forEach(s=>s.classList.remove('drag-over'));
+}
+function onSlotDragOver(e,slotKey){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onSlotDragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+function onSlotDrop(e,slotKey){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id=_dragItemId||e.dataTransfer.getData('text/plain');
+  if(!id)return;
+  const item=items.find(i=>i.id===id);if(!item)return;
+  outfitSlots[slotKey]=item;
+  _dragItemId=null;
+  renderBuilder();
+  showToast(item.name+' dropped into '+slotKey);
+}
+
+// Touch drag (mobile)
+let _touchDragId=null,_touchGhost=null;
+function onTouchStart(e,id){
+  _touchDragId=id;
+  const card=e.currentTarget;
+  const rect=card.getBoundingClientRect();
+  // Create ghost element
+  _touchGhost=card.cloneNode(true);
+  _touchGhost.style.cssText=`position:fixed;width:${rect.width}px;height:${rect.height}px;opacity:0.75;pointer-events:none;z-index:9999;border-radius:10px;overflow:hidden;transform:scale(1.05);transition:none`;
+  _touchGhost.style.left=(rect.left)+'px';
+  _touchGhost.style.top=(rect.top)+'px';
+  document.body.appendChild(_touchGhost);
+  card.style.opacity='0.4';
+}
+function onTouchMove(e){
+  if(!_touchGhost)return;
+  e.preventDefault();
+  const t=e.touches[0];
+  _touchGhost.style.left=(t.clientX-48)+'px';
+  _touchGhost.style.top=(t.clientY-64)+'px';
+  // Highlight slot under touch
+  document.querySelectorAll('.canvas-slot').forEach(s=>s.classList.remove('drag-over'));
+  const el=document.elementFromPoint(t.clientX,t.clientY);
+  const slot=el?.closest('.canvas-slot');
+  if(slot)slot.classList.add('drag-over');
+}
+function onTouchEnd(e){
+  if(_touchGhost){_touchGhost.remove();_touchGhost=null;}
+  document.querySelectorAll('.mini-card').forEach(c=>c.style.opacity='');
+  document.querySelectorAll('.canvas-slot').forEach(s=>s.classList.remove('drag-over'));
+  if(!_touchDragId)return;
+  const t=e.changedTouches[0];
+  const el=document.elementFromPoint(t.clientX,t.clientY);
+  const slot=el?.closest('.canvas-slot');
+  if(slot){
+    // Find which slot key this is
+    const slotKey=SLOT_CONFIG.find(s=>{
+      const existing=outfitSlots[s.key];
+      return slot.querySelector('.slot-lbl')?.textContent?.trim()===s.label||
+             (existing&&slot.querySelector('img')?.src===existing.img);
+    })?.key;
+    // Fallback: find by position in canvas
+    const slots=Array.from(document.querySelectorAll('.canvas-slot'));
+    const idx=slots.indexOf(slot);
+    const key=idx>=0?SLOT_CONFIG[idx]?.key:null;
+    const finalKey=slotKey||key;
+    if(finalKey){
+      const item=items.find(i=>i.id===_touchDragId);
+      if(item){outfitSlots[finalKey]=item;renderBuilder();showToast(item.name+' added');}
+    }
+  }
+  _touchDragId=null;
+}
+// ─────────────────────────────────────────────────────────
+
+function renderBuilder(){
+  const cats=['All',...new Set(items.map(i=>i.category))];
+  document.getElementById('builder-filter-row').innerHTML=cats.map(c=>`
+    <div class="chip ${c===builderCatFilter?'active':''}" style="font-size:11px;padding:4px 10px" onclick="setBuilderFilter('${c}')">${c}</div>`).join('');
+
+  // Colour sub-filter
+  const subRow=document.getElementById('builder-color-sub-row');
+  if(builderCatFilter==='All'){
+    subRow.style.display='none';
+    builderColorFilter='All';
+  } else {
+    const catItems=items.filter(i=>i.category===builderCatFilter);
+    const families=new Set([
+      ...catItems.map(i=>i.colorFamily||getColorFamily(i.color||'')),
+      ...catItems.map(i=>i.accentFamily||getColorFamily(i.accentColor||''))
+    ].filter(Boolean));
+    if(families.size>1){
+      subRow.style.display='flex';
+      const opts=[{name:'All',swatch:null},...COLOR_FAMILIES.filter(f=>families.has(f.name))];
+      subRow.innerHTML=opts.map(f=>{
+        const active=builderColorFilter===f.name;
+        const swatch=f.swatch?`<span style="width:11px;height:11px;border-radius:50%;background:${f.swatch};border:1px solid rgba(0,0,0,0.15);flex-shrink:0;display:inline-block"></span>`:'';
+        return`<div class="chip ${active?'active':''}" style="display:flex;align-items:center;gap:4px;font-size:11px;padding:4px 11px" onclick="setBuilderColorFilter('${f.name}')">${swatch}${f.name==='All'?'All colours':f.name}</div>`;
+      }).join('');
+    } else {
+      subRow.style.display='none';
+    }
+  }
+
+  let filtered=builderCatFilter==='All'?items:items.filter(i=>i.category===builderCatFilter);
+  if(builderColorFilter!=='All'){
+    filtered=filtered.filter(i=>{
+      const fam=i.colorFamily||getColorFamily(i.color||'');
+      const acc=i.accentFamily||getColorFamily(i.accentColor||'');
+      return fam===builderColorFilter||acc===builderColorFilter;
+    });
+  }
+  const grid=document.getElementById('builder-grid');
+  if(filtered.length===0){
+    grid.innerHTML=`<div style="color:var(--text3);font-size:12px;grid-column:1/-1;padding:1rem 0">${items.length===0?'Add items to your wardrobe first':'No items in this category'}</div>`;
+  }else{
+    const canvasIds=Object.values(outfitSlots).filter(Boolean).map(i=>i.id);
+    grid.innerHTML=filtered.map(item=>`
+      <div class="mini-card ${canvasIds.includes(item.id)?'in-canvas':''}"
+        draggable="true"
+        onclick="addToCanvas('${item.id}')"
+        ondragstart="onDragStart(event,'${item.id}')"
+        ondragend="onDragEnd(event)"
+        ontouchstart="onTouchStart(event,'${item.id}')"
+        ontouchmove="onTouchMove(event)"
+        ontouchend="onTouchEnd(event)">
+        <div class="mini-img">${item.img?`<img src="${item.img}" alt="${item.name}" draggable="false" />`:`<i class="fas ${CAT_ICONS[item.category]||'fa-shirt'}"></i>`}</div>
+        <div class="mini-label">${item.name}</div>
+      </div>`).join('');
+  }
+  renderCanvas();renderOutfitOccasions();
+}
+function setBuilderFilter(c){builderCatFilter=c;builderColorFilter='All';renderBuilder();}
+function setBuilderColorFilter(c){builderColorFilter=c;renderBuilder();}
+
+function addToCanvas(id){
+  const item=items.find(i=>i.id===id);if(!item)return;
+  const slot=SLOT_MAP[item.category]||'acc';
+  outfitSlots[slot]=item;
+  renderBuilder();showToast(item.name+' added to canvas');
+}
+function removeFromCanvas(slot,e){if(e)e.stopPropagation();outfitSlots[slot]=null;renderBuilder();}
+
+function renderCanvas(){
+  const canvas=document.getElementById('outfit-canvas');
+  canvas.innerHTML=`
+    <div class="canvas-row">${SLOT_CONFIG.slice(0,2).map(s=>slotHTML(s)).join('')}</div>
+    <div class="canvas-row">${SLOT_CONFIG.slice(2).map(s=>slotHTML(s)).join('')}</div>`;
+}
+function slotHTML(s){
+  const item=outfitSlots[s.key];
+  return`<div class="canvas-slot ${item?'filled':''}"
+    ondragover="onSlotDragOver(event,'${s.key}')"
+    ondragleave="onSlotDragLeave(event)"
+    ondrop="onSlotDrop(event,'${s.key}')">
+    ${item?(item.img?`<img src="${item.img}" alt="${item.name}" />`:`<i class="fas ${CAT_ICONS[item.category]||'fa-shirt'} slot-icon"></i>`):`<i class="fas ${s.icon} slot-icon"></i>`}
+    <div class="slot-lbl">${item?item.name.substring(0,11):s.label}</div>
+    ${item?`<button class="slot-remove" onclick="removeFromCanvas('${s.key}',event)"><i class="fas fa-times"></i></button>`:''}
+  </div>`;
+}
+
+function renderOutfitOccasions(){
+  const row=document.getElementById('outfit-occasion-row');
+  row.innerHTML=OCCASIONS.slice(0,6).map(o=>`
+    <div class="occ-check ${outfitOccasions.includes(o)?'active':''}" style="font-size:11px;padding:4px 9px" onclick="toggleOutfitOcc('${o}')">${o}</div>`).join('');
+}
+function toggleOutfitOcc(o){
+  outfitOccasions=outfitOccasions.includes(o)?outfitOccasions.filter(x=>x!==o):[...outfitOccasions,o];
+  renderOutfitOccasions();
+}
+
+async function getAISuggestion(){
+  const slotItems=Object.values(outfitSlots).filter(Boolean);
+  if(slotItems.length===0){showToast('Add at least one item first');return;}
+  const panel=document.getElementById('ai-panel');
+  const aiText=document.getElementById('ai-text');
+  panel.classList.add('visible');
+  aiText.innerHTML='<div class="ai-loading"><div class="spinner"></div>Analysing your outfit…</div>';
+  const desc=slotItems.map(i=>`${i.name} (${i.category}${i.color?', '+i.color:''}${(i.occasions||[]).length?' for '+i.occasions.join('/'):''})`).join(', ');
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'You are a concise personal stylist. Give practical outfit advice in 2-3 short sentences. Be specific and actionable. No preamble.',
+        messages:[{role:'user',content:`I have this outfit combination: ${desc}. Give me styling tips, what occasions it suits, and one suggestion to improve it.`}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content?.find(b=>b.type==='text')?.text||'No suggestion available.';
+    aiText.textContent=text;
+  }catch(err){
+    aiText.textContent='Could not reach the AI — check your connection and try again.';
+  }
+}
+
+function saveOutfit(){
+  const name=document.getElementById('outfit-name').value.trim()||'Outfit '+(outfits.length+1);
+  const slotItems=Object.values(outfitSlots).filter(Boolean);
+  if(slotItems.length===0){showToast('Add at least one item to save');return;}
+  outfits.unshift({id:Date.now().toString(),name,items:slotItems.map(i=>i.id),occasions:[...outfitOccasions],savedAt:new Date().toLocaleDateString()});
+  save();
+  Object.keys(outfitSlots).forEach(k=>outfitSlots[k]=null);
+  outfitOccasions=[];
+  document.getElementById('outfit-name').value='';
+  document.getElementById('ai-panel').classList.remove('visible');
+  renderBuilder();
+  showToast('Outfit "'+name+'" saved ✓');
+}
+
+function renderOutfits(){
+  const q=(document.getElementById('outfit-search').value||'').toLowerCase();
+  const allOccs=['All',...new Set(outfits.flatMap(o=>o.occasions||[]))];
+  document.getElementById('outfit-occ-filter').innerHTML=allOccs.map(o=>`
+    <div class="chip ${o===outfitOccFilter?'active':''}" onclick="setOutfitOccFilter('${o}')">${o==='All'?'All occasions':o}</div>`).join('');
+  const filtered=outfits.filter(o=>{
+    const matchQ=!q||o.name.toLowerCase().includes(q);
+    const matchOcc=outfitOccFilter==='All'||(o.occasions||[]).includes(outfitOccFilter);
+    return matchQ&&matchOcc;
+  });
+  const grid=document.getElementById('outfits-grid');
+  if(filtered.length===0){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-layer-group"></i><h3>${outfits.length===0?'No saved outfits yet':'No outfits found'}</h3><p>${outfits.length===0?'Go to the Outfit Builder to create your first look':'Try a different filter'}</p></div>`;
+    return;
+  }
+  grid.innerHTML=filtered.map(outfit=>{
+    const ois=outfit.items.map(id=>items.find(i=>i.id===id)).filter(Boolean);
+    const tags=(outfit.occasions||[]).map(o=>`<span class="outfit-tag">${o}</span>`).join('');
+    return`<div class="outfit-card" style="position:relative">
+      <button onclick="openDeleteOutfitModal('${outfit.id}',event)" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:#fff;color:#C0392B;border:1.5px solid #C0392B;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;cursor:pointer;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,0.12);transition:all 0.15s" onmouseover="this.style.background='#C0392B';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='#C0392B'">&#215;</button>
+      <div class="outfit-preview">
+        ${ois.map(item=>`<div class="outfit-preview-item">${item.img?`<img src="${item.img}" alt="${item.name}">`:`<i class="fas ${CAT_ICONS[item.category]||'fa-shirt'}"></i>`}</div>`).join('')}
+        ${ois.length===0?'<span style="color:var(--text3);font-size:12px">Items removed</span>':''}
+      </div>
+      <div class="outfit-info">
+        <h3>${outfit.name}</h3>
+        <p>${ois.length} item${ois.length!==1?'s':''} · Saved ${outfit.savedAt}</p>
+        ${tags?`<div class="outfit-tags">${tags}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function setOutfitOccFilter(o){outfitOccFilter=o;renderOutfits();}
+
+let pendingDeleteOutfitId=null;
+function openDeleteOutfitModal(id,e){
+  e.stopPropagation();
+  pendingDeleteOutfitId=id;
+  const outfit=outfits.find(o=>o.id===id);if(!outfit)return;
+  document.getElementById('delete-outfit-modal-title').textContent='Delete "'+outfit.name+'"?';
+  document.getElementById('delete-outfit-modal-desc').textContent='This will permanently remove the outfit. Your wardrobe items will not be affected.';
+  document.getElementById('delete-outfit-modal-overlay').classList.add('open');
+}
+function closeDeleteOutfitModal(){
+  pendingDeleteOutfitId=null;
+  document.getElementById('delete-outfit-modal-overlay').classList.remove('open');
+}
+function doDeleteOutfit(){
+  if(!pendingDeleteOutfitId)return;
+  const outfit=outfits.find(o=>o.id===pendingDeleteOutfitId);
+  outfits=outfits.filter(o=>o.id!==pendingDeleteOutfitId);
+  save();closeDeleteOutfitModal();
+  const oname=outfit?outfit.name:'Outfit';
+  showToast('"'+oname+'" deleted');
+  renderOutfits();
+}
+
+</script>
+</body>
+</html>
