@@ -444,12 +444,21 @@ async function dbGet(path){
   return fromFS(await r.json());
 }
 async function dbSet(path,obj){
-  // PATCH without updateMask creates the document if it doesn't exist
-  await fetch(FB_DB_URL+"/"+path,{
-    method:"PATCH",
+  // Firestore commit with unconditional write — always creates or overwrites
+  const commitUrl="https://firestore.googleapis.com/v1/projects/"+FB_PROJECT+"/databases/(default)/documents:commit";
+  const docName="projects/"+FB_PROJECT+"/databases/(default)/documents/"+path;
+  const r=await fetch(commitUrl,{
+    method:"POST",
     headers:{"Authorization":"Bearer "+_idToken,"Content-Type":"application/json"},
-    body:JSON.stringify(toFS(obj))
+    body:JSON.stringify({
+      writes:[{update:{name:docName,fields:toFS(obj).fields}}]
+    })
   });
+  if(!r.ok){
+    const err=await r.json();
+    console.error("dbSet error:",err);
+    throw new Error("Firestore write failed: "+r.status);
+  }
 }
 
 // Load/Save
