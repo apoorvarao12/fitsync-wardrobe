@@ -444,20 +444,18 @@ async function dbGet(path){
   return fromFS(await r.json());
 }
 async function dbSet(path,obj){
-  // Firestore commit with unconditional write — always creates or overwrites
-  const commitUrl="https://firestore.googleapis.com/v1/projects/"+FB_PROJECT+"/databases/(default)/documents:commit";
-  const docName="projects/"+FB_PROJECT+"/databases/(default)/documents/"+path;
-  const r=await fetch(commitUrl,{
-    method:"POST",
+  // Simple PATCH — Firestore creates doc if it doesn't exist when rules allow
+  const url="https://firestore.googleapis.com/v1/projects/"+FB_PROJECT+"/databases/(default)/documents/"+path;
+  console.log("dbSet url:",url,"token present:",!!_idToken);
+  const r=await fetch(url,{
+    method:"PATCH",
     headers:{"Authorization":"Bearer "+_idToken,"Content-Type":"application/json"},
-    body:JSON.stringify({
-      writes:[{update:{name:docName,fields:toFS(obj).fields}}]
-    })
+    body:JSON.stringify(toFS(obj))
   });
   if(!r.ok){
     const err=await r.json();
-    console.error("dbSet error:",err);
-    throw new Error("Firestore write failed: "+r.status);
+    console.error("dbSet error:",r.status, JSON.stringify(err));
+    throw new Error("Firestore write failed: "+r.status+" "+JSON.stringify(err));
   }
 }
 
