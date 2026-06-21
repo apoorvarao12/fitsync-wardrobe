@@ -407,63 +407,41 @@ main{max-width:1080px;margin:0 auto;padding:1.5rem}
 const FB_API_KEY="AIzaSyB4jYD4NMPh_XZr6Fj_kQBnRFMYKs0_KT0";
 const FB_PROJECT="fitsync-2332a";
 const FB_AUTH_URL="https://identitytoolkit.googleapis.com/v1/accounts";
-const FB_DB_URL="https://firestore.googleapis.com/v1/projects/"+FB_PROJECT+"/databases/(default)/documents";
+// ── Supabase database ─────────────────────────────────────
+const SB_URL="https://wqburjytdrfczyyvjpwl.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxYnVyanl0ZHJmY3p5eXZqcHdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNDAzMDIsImV4cCI6MjA5NzYxNjMwMn0.OAQ5XEWC7Yeh8K1IvZqi5-3VPuAJf5T5Y_UuH8Di768";
+const SB_HEADERS={"apikey":SB_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"};
 
 let _idToken=null,_uid=null,_currentUser=null;
 
-// Firestore type converters
-function toFS(obj){
-  function cv(v){
-    if(v===null||v===undefined)return{nullValue:null};
-    if(typeof v==='boolean')return{booleanValue:v};
-    if(typeof v==='number')return{doubleValue:v};
-    if(typeof v==='string')return{stringValue:v};
-    if(Array.isArray(v))return{arrayValue:{values:v.map(cv)}};
-    if(typeof v==='object')return{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,cv(x)]))}};
-    return{stringValue:String(v)};
-  }
-  return{fields:Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,cv(v)]))};
+async function dbGet(uid){
+  const r=await fetch(SB_URL+"/rest/v1/wardrobes?user_id=eq."+uid+"&select=data",{
+    headers:SB_HEADERS
+  });
+  if(!r.ok)return null;
+  const rows=await r.json();
+  return rows.length>0?rows[0].data:null;
 }
-function fromFS(doc){
-  if(!doc||!doc.fields)return null;
-  function pv(v){
-    if('nullValue'in v)return null;
-    if('booleanValue'in v)return v.booleanValue;
-    if('integerValue'in v)return parseInt(v.integerValue);
-    if('doubleValue'in v)return v.doubleValue;
-    if('stringValue'in v)return v.stringValue;
-    if('arrayValue'in v)return(v.arrayValue.values||[]).map(pv);
-    if('mapValue'in v)return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,x])=>[k,pv(x)]));
-    return null;
-  }
-  return Object.fromEntries(Object.entries(doc.fields).map(([k,v])=>[k,pv(v)]));
-}
-async function dbGet(path){
-  const r=await fetch(FB_DB_URL+"/"+path,{headers:{"Authorization":"Bearer "+_idToken}});
-  if(r.status===404)return null;
-  return fromFS(await r.json());
-}
-async function dbSet(path,obj){
-  // Simple PATCH — Firestore creates doc if it doesn't exist when rules allow
-  const url="https://firestore.googleapis.com/v1/projects/"+FB_PROJECT+"/databases/(default)/documents/"+path;
-  console.log("dbSet url:",url,"token present:",!!_idToken);
-  const r=await fetch(url,{
-    method:"PATCH",
-    headers:{"Authorization":"Bearer "+_idToken,"Content-Type":"application/json"},
-    body:JSON.stringify(toFS(obj))
+
+async function dbSet(uid,obj){
+  // Upsert — insert or update in one call
+  const r=await fetch(SB_URL+"/rest/v1/wardrobes",{
+    method:"POST",
+    headers:{...SB_HEADERS,"Prefer":"resolution=merge-duplicates"},
+    body:JSON.stringify({user_id:uid,data:obj})
   });
   if(!r.ok){
-    const err=await r.json();
-    console.error("dbSet error:",r.status, JSON.stringify(err));
-    throw new Error("Firestore write failed: "+r.status+" "+JSON.stringify(err));
+    const err=await r.text();
+    console.error("dbSet error:",r.status,err);
+    throw new Error("Save failed: "+r.status);
   }
 }
 
 // Load/Save
 async function load(){
-  if(!_currentUser||!_idToken){items=[];outfits=[];return;}
+  if(!_currentUser){items=[];outfits=[];return;}
   try{
-    const d=await dbGet("users/"+_uid);
+    const d=await dbGet(_uid);
     if(d){items=d.items||[];outfits=d.outfits||[];}
     else{items=[];outfits=[];}
   }catch(e){console.error("load",e);items=[];outfits=[];}
@@ -472,9 +450,9 @@ let _saveTimer=null;
 function save(){
   clearTimeout(_saveTimer);
   _saveTimer=setTimeout(async()=>{
-    if(!_currentUser||!_idToken)return;
-    try{await dbSet("users/"+_uid,{items,outfits,updatedAt:Date.now()});}
-    catch(e){console.error("save",e);}
+    if(!_currentUser)return;
+    try{await dbSet(_uid,{items,outfits,updatedAt:Date.now()});}
+    catch(e){console.error("save",e);showToast("Save failed — check connection");}
   },800);
 }
 
